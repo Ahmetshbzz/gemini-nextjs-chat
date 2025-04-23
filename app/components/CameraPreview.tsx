@@ -2,12 +2,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Video, VideoOff } from "lucide-react";
+import { Video, VideoOff, RotateCcw } from "lucide-react";
 import { GeminiWebSocket } from '../services/geminiWebSocket';
 import { Base64 } from 'js-base64';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface CameraPreviewProps {
   onTranscription: (text: string) => void;
@@ -29,6 +27,8 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
   const [isModelSpeaking, setIsModelSpeaking] = useState(false);
   const [outputAudioLevel, setOutputAudioLevel] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('user');
+  const [isMirrored, setIsMirrored] = useState(false);
 
   const cleanupAudio = useCallback(() => {
     if (audioWorkletNodeRef.current) {
@@ -54,6 +54,59 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     geminiWsRef.current.sendMediaChunk(b64Data, "audio/pcm");
   };
 
+  const switchCamera = async () => {
+    if (!isStreaming) return;
+    
+    // Temizle mevcut stream
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+    
+    // Kamera yönünü değiştir
+    const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
+    setCurrentCamera(newFacingMode);
+    
+    try {
+      // Yeni video stream yarat
+      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: {
+          facingMode: newFacingMode
+        },
+        audio: false
+      });
+      
+      // Aynı audio stream için yeniden izin al
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          autoGainControl: true,
+          noiseSuppression: true,
+        }
+      });
+      
+      // Video referansını güncelle
+      if (videoRef.current) {
+        videoRef.current.srcObject = videoStream;
+        videoRef.current.muted = true;
+      }
+      
+      // Stream'i birleştir ve state'i güncelle
+      const combinedStream = new MediaStream([
+        ...videoStream.getTracks(),
+        ...audioStream.getTracks()
+      ]);
+      
+      setStream(combinedStream);
+    } catch (err) {
+      console.error('Error switching camera:', err);
+    }
+  };
+
   const toggleCamera = async () => {
     if (isStreaming && stream) {
       setIsStreaming(false);
@@ -67,7 +120,9 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     } else {
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({ 
-          video: true,
+          video: {
+            facingMode: currentCamera
+          },
           audio: false
         });
 
@@ -219,6 +274,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
           setIsAudioSetup(false);
         };
       } catch (error) {
+        console.error("[Camera] Audio processing setup error:", error);
         if (isActive) {
           cleanupAudio();
           setIsAudioSetup(false);
@@ -253,8 +309,19 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
 
-    // Draw video frame to canvas
-    context.drawImage(videoRef.current, 0, 0);
+    // Clear canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (isMirrored) {
+      // Eğer ayna görüntüsü aktifse, canvası çevirip çizim yap
+      context.save();
+      context.scale(-1, 1);
+      context.drawImage(videoRef.current, -canvas.width, 0, canvas.width, canvas.height);
+      context.restore();
+    } else {
+      // Normal çizim
+      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    }
 
     // Convert to base64 and send
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
@@ -262,14 +329,19 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     geminiWsRef.current.sendMediaChunk(b64Data, "image/jpeg");
   };
 
+  // Ayna görüntüsünü değiştirme fonksiyonu
+  const toggleMirror = () => {
+    setIsMirrored(!isMirrored);
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="relative">
+    <div className="space-y-2 md:space-y-4 w-full">
+      <div className="relative w-full h-full">
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          className="w-[640px] h-[480px] bg-muted rounded-lg overflow-hidden"
+          className={`w-full h-auto min-h-[70vh] md:min-h-[65vh] lg:min-h-[480px] object-cover bg-muted rounded-lg overflow-hidden mx-auto ${isMirrored ? 'scale-x-[-1]' : ''}`}
         />
         
         {/* Connection Status Overlay */}
@@ -278,29 +350,61 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
             <div className="text-center space-y-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
               <p className="text-white font-medium">
-                {connectionStatus === 'connecting' ? 'Connecting to Gemini...' : 'Disconnected'}
+                {connectionStatus === 'connecting' ? 'Bağlanıyor...' : 'Bağlantı kesildi'}
               </p>
               <p className="text-white/70 text-sm">
-                Please wait while we establish a secure connection
+                Lütfen bağlantı kurulurken bekleyin
               </p>
             </div>
           </div>
         )}
 
+        {/* Ana kamera aç/kapat butonu */}
         <Button
           onClick={toggleCamera}
           size="icon"
-          className={`absolute left-1/2 bottom-4 -translate-x-1/2 rounded-full w-12 h-12 backdrop-blur-sm transition-colors
+          className={`absolute left-1/2 bottom-3 md:bottom-4 -translate-x-1/2 rounded-full w-10 h-10 md:w-12 md:h-12 backdrop-blur-sm transition-colors
             ${isStreaming 
               ? 'bg-red-500/50 hover:bg-red-500/70 text-white' 
               : 'bg-green-500/50 hover:bg-green-500/70 text-white'
             }`}
         >
-          {isStreaming ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
+          {isStreaming ? <VideoOff className="h-5 w-5 md:h-6 md:w-6" /> : <Video className="h-5 w-5 md:h-6 md:w-6" />}
         </Button>
+
+        {/* Kamera değiştirme butonu */}
+        {isStreaming && (
+          <Button
+            onClick={switchCamera}
+            size="icon"
+            className="absolute right-3 md:right-4 bottom-3 md:bottom-4 rounded-full w-8 h-8 md:w-10 md:h-10 backdrop-blur-sm transition-colors
+              bg-blue-500/50 hover:bg-blue-500/70 text-white"
+          >
+            <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+        )}
+        
+        {/* Ayna görüntüsü butonu */}
+        {isStreaming && (
+          <Button
+            onClick={toggleMirror}
+            size="icon"
+            className="absolute left-3 md:left-4 bottom-3 md:bottom-4 rounded-full w-8 h-8 md:w-10 md:h-10 backdrop-blur-sm transition-colors
+              bg-yellow-500/50 hover:bg-yellow-500/70 text-white"
+            title="Ayna görüntüsünü değiştir"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 md:h-5 md:w-5">
+              <path d="M21 3H3"></path>
+              <path d="M21 21H3"></path>
+              <path d="M12 3v18"></path>
+              <path d="M3 12h9"></path>
+              <path d="M15 12h6"></path>
+            </svg>
+          </Button>
+        )}
       </div>
       {isStreaming && (
-        <div className="w-[640px] h-2 rounded-full bg-green-100">
+        <div className="w-full max-w-[640px] h-2 rounded-full bg-green-100 mx-auto">
           <div
             className="h-full rounded-full transition-all bg-green-500"
             style={{ 

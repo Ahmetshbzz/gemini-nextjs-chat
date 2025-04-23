@@ -26,7 +26,7 @@ const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (
     </Avatar>
     <div className="flex-1 space-y-1 md:space-y-2">
       <div className="flex items-center gap-1 md:gap-2">
-        <p className="text-xs md:text-sm font-medium text-zinc-900">Sen</p>
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Kanka</p>
         <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
@@ -63,7 +63,7 @@ const GeminiMessage = ({ message, onReaction }: { message: Message; onReaction: 
     </Avatar>
     <div className="flex-1 space-y-1 md:space-y-2">
       <div className="flex items-center gap-1 md:gap-2">
-        <p className="text-xs md:text-sm font-medium text-zinc-900">Gemini</p>
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Kanki G</p>
         <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
@@ -114,23 +114,23 @@ export default function Home() {
   }, [addReaction]);
 
   return (
-    <>
-      <h1 className="text-3xl md:text-4xl font-bold text-zinc-800 p-4 md:p-8 md:pb-0 text-center md:text-left">
-        Canlı Sohbet
+    <div className="flex flex-col min-h-screen">
+      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-zinc-800 p-3 pb-1 md:p-6 md:pb-3 text-center">
+         Canlı sohbet
       </h1>
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-8">
-        <div className="w-full md:w-auto">
+      <div className="flex flex-col md:flex-row w-full flex-1 md:gap-4 lg:gap-6">
+        <div className="w-full px-1 md:px-2 md:w-7/12 lg:w-3/5 md:pl-6 flex-grow">
           <CameraPreview onTranscription={handleTranscription} />
         </div>
 
-        <div className="w-full md:w-[640px] bg-white rounded-lg border border-zinc-200">
-          <div className="p-4 border-b border-zinc-200">
+        <div className="w-full px-1 md:px-2 md:w-5/12 lg:w-2/5 md:pr-6 bg-white rounded-lg border border-zinc-200 flex flex-col mt-3 md:mt-0 mb-3 md:mb-6">
+          <div className="p-2 md:p-4 border-b border-zinc-200">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500" />
                 <Input
                   placeholder="Mesajlarda ara..."
-                  className="pl-8"
+                  className="pl-8 text-sm"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 />
@@ -145,13 +145,13 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <ScrollArea className="h-[350px] md:h-[480px] p-4 md:p-6">
-            <div className="space-y-6">
+          <ScrollArea className="h-[250px] sm:h-[300px] md:h-[400px] lg:h-[480px] p-2 md:p-4 flex-1">
+            <div className="space-y-4">
               <GeminiMessage
                 message={{
                   id: 'welcome',
                   type: 'gemini',
-                  text: "Merhaba! Ben Ahmet. Seni görebilir ve duyabilirim. Hadi sohbet edelim!",
+                  text: "Hey kanka! Ben Aras, senin yeni dijital arkadaşın! Seni görebilir ve duyabilirim. Hadi takılalım, ne konuşmak istersen varım!",
                   timestamp: Date.now(),
                   reactions: []
                 }}
@@ -176,6 +176,6 @@ export default function Home() {
           </ScrollArea>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Gemini NextJS Chat',
-  description: 'Next.js 15.3 ile Gemini AI Chat Uygulaması',
+  title: 'Kanki Gemini Sohbet',
+  description: 'Arkadaşın Gemini ile takıl, muhabbet et! Next.js 15.3 ile geliştirildi',
 };
 
 export default function RootLayout({
