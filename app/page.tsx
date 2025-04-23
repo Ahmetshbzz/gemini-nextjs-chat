@@ -1,0 +1,179 @@
+// app/page.tsx
+"use client";
+import { useState, useCallback, useEffect } from 'react';
+import CameraPreview from './components/CameraPreview';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Trash2, SmilePlus } from "lucide-react";
+import { useMessageStore, Message } from './services/messageStore';
+
+// Tutarlı zaman formatı için yardımcı fonksiyon
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (emoji: string) => void }) => (
+  <div className="flex gap-3 items-start group">
+    <Avatar className="h-8 w-8">
+      <AvatarImage src="/avatars/human.png" alt="Human" />
+      <AvatarFallback>H</AvatarFallback>
+    </Avatar>
+    <div className="flex-1 space-y-2">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-medium text-zinc-900">You</p>
+        <span className="text-xs text-zinc-500">
+          {formatTime(message.timestamp)}
+        </span>
+      </div>
+      <div className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-800">
+        {message.text}
+      </div>
+      {message.reactions && message.reactions.length > 0 && (
+        <div className="flex gap-1 mt-1">
+          {message.reactions.map((reaction, index) => (
+            <span key={index} className="text-sm bg-white rounded-full px-2 py-0.5 border">
+              {reaction}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="opacity-0 group-hover:opacity-100 transition-opacity"
+      onClick={() => onReaction('👍')}
+    >
+      <SmilePlus className="h-4 w-4" />
+    </Button>
+  </div>
+);
+
+const GeminiMessage = ({ message, onReaction }: { message: Message; onReaction: (emoji: string) => void }) => (
+  <div className="flex gap-3 items-start group">
+    <Avatar className="h-8 w-8 bg-blue-600">
+      <AvatarImage src="/avatars/gemini.png" alt="Gemini" />
+      <AvatarFallback>AI</AvatarFallback>
+    </Avatar>
+    <div className="flex-1 space-y-2">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-medium text-zinc-900">Gemini</p>
+        <span className="text-xs text-zinc-500">
+          {formatTime(message.timestamp)}
+        </span>
+      </div>
+      <div className="rounded-lg bg-white border border-zinc-200 px-3 py-2 text-sm text-zinc-800">
+        {message.text}
+      </div>
+      {message.reactions && message.reactions.length > 0 && (
+        <div className="flex gap-1 mt-1">
+          {message.reactions.map((reaction, index) => (
+            <span key={index} className="text-sm bg-white rounded-full px-2 py-0.5 border">
+              {reaction}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="opacity-0 group-hover:opacity-100 transition-opacity"
+      onClick={() => onReaction('👍')}
+    >
+      <SmilePlus className="h-4 w-4" />
+    </Button>
+  </div>
+);
+
+export default function Home() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const { messages, addMessage, addReaction, clearMessages, searchMessages } = useMessageStore();
+  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      setFilteredMessages(searchMessages(searchQuery));
+    } else {
+      setFilteredMessages(messages);
+    }
+  }, [searchQuery, messages, searchMessages]);
+
+  const handleTranscription = useCallback((transcription: string) => {
+    addMessage({ type: 'gemini', text: transcription });
+  }, [addMessage]);
+
+  const handleReaction = useCallback((messageId: string, emoji: string) => {
+    addReaction(messageId, emoji);
+  }, [addReaction]);
+
+  return (
+    <>
+      <h1 className="text-4xl font-bold text-zinc-800 p-8 pb-0">
+        Multimodal Live Chat
+      </h1>
+      <div className="flex gap-8 p-8">
+        <CameraPreview onTranscription={handleTranscription} />
+
+        <div className="w-[640px] bg-white rounded-lg border border-zinc-200">
+          <div className="p-4 border-b border-zinc-200">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500" />
+                <Input
+                  placeholder="Search messages..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={clearMessages}
+                title="Clear messages"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <ScrollArea className="h-[480px] p-6">
+            <div className="space-y-6">
+              <GeminiMessage
+                message={{
+                  id: 'welcome',
+                  type: 'gemini',
+                  text: "Hi! I'm Gemini. I can see and hear you. Let's chat!",
+                  timestamp: Date.now(),
+                  reactions: []
+                }}
+                onReaction={(emoji) => handleReaction('welcome', emoji)}
+              />
+              {filteredMessages.map((message) => (
+                message.type === 'human' ? (
+                  <HumanMessage
+                    key={message.id}
+                    message={message}
+                    onReaction={(emoji) => handleReaction(message.id, emoji)}
+                  />
+                ) : (
+                  <GeminiMessage
+                    key={message.id}
+                    message={message}
+                    onReaction={(emoji) => handleReaction(message.id, emoji)}
+                  />
+                )
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+    </>
+  );
+}
