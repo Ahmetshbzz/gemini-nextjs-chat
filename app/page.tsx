@@ -26,7 +26,7 @@ const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (
     </Avatar>
     <div className="flex-1 space-y-1 md:space-y-2">
       <div className="flex items-center gap-1 md:gap-2">
-        <p className="text-xs md:text-sm font-medium text-zinc-900">Kanka</p>
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Öğrenci</p>
         <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
@@ -63,7 +63,7 @@ const GeminiMessage = ({ message, onReaction }: { message: Message; onReaction: 
     </Avatar>
     <div className="flex-1 space-y-1 md:space-y-2">
       <div className="flex items-center gap-1 md:gap-2">
-        <p className="text-xs md:text-sm font-medium text-zinc-900">Kanki G</p>
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Teacher Emma</p>
         <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
@@ -116,7 +116,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-zinc-800 p-3 pb-1 md:p-6 md:pb-3 text-center">
-         Canlı sohbet
+         Teacher Emma ile İngilizce
       </h1>
       <div className="flex flex-col md:flex-row w-full flex-1 md:gap-4 lg:gap-6">
         <div className="w-full px-1 md:px-2 md:w-7/12 lg:w-3/5 md:pl-6 flex-grow">
@@ -151,7 +151,7 @@ export default function Home() {
                 message={{
                   id: 'welcome',
                   type: 'gemini',
-                  text: "Hey kanka! Ben Aras, senin yeni dijital arkadaşın! Seni görebilir ve duyabilirim. Hadi takılalım, ne konuşmak istersen varım!",
+                  text: "Merhaba! Ben Emma, senin İngilizce öğretmeninim. Birlikte İngilizce öğrenmek için buradayım. Bana istediğin soruyu sorabilir veya İngilizce pratik yapmak istediğin konuları söyleyebilirsin.",
                   timestamp: Date.now(),
                   reactions: []
                 }}
