@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
-const MODEL_NAME = "gemini-1.5-pro";
+const MODEL_NAME = "gemini-2.0-flash-exp";
 
 export class TranscriptionService {
   private model;
@@ -23,9 +23,13 @@ export class TranscriptionService {
       ]);
 
       return result.response.text();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Transcription error:", error);
-      throw error;
+      const errorMessage = String(error);
+      if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+        return "[Ses çevirisi için API kotası aşıldı. Lütfen daha sonra tekrar deneyin.]";
+      }
+      return "[Ses çevirisi şu anda yapılamıyor.]";
     }
   }
 } 
