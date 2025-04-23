@@ -21,12 +21,12 @@ const formatTime = (timestamp: number) => {
 const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (emoji: string) => void }) => (
   <div className="flex gap-2 md:gap-3 items-start group">
     <Avatar className="h-6 w-6 md:h-8 md:w-8">
-      <AvatarImage src="/avatars/human.png" alt="Human" />
+      <AvatarImage src="/avatars/human.png" alt="İnsan" />
       <AvatarFallback>H</AvatarFallback>
     </Avatar>
     <div className="flex-1 space-y-1 md:space-y-2">
       <div className="flex items-center gap-1 md:gap-2">
-        <p className="text-xs md:text-sm font-medium text-zinc-900">You</p>
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Sen</p>
         <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
@@ -116,7 +116,7 @@ export default function Home() {
   return (
     <>
       <h1 className="text-3xl md:text-4xl font-bold text-zinc-800 p-4 md:p-8 md:pb-0 text-center md:text-left">
-        Multimodal Live Chat
+        Canlı Sohbet
       </h1>
       <div className="flex flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-8">
         <div className="w-full md:w-auto">
@@ -129,7 +129,7 @@ export default function Home() {
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500" />
                 <Input
-                  placeholder="Search messages..."
+                  placeholder="Mesajlarda ara..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
@@ -139,7 +139,7 @@ export default function Home() {
                 variant="outline"
                 size="icon"
                 onClick={clearMessages}
-                title="Clear messages"
+                title="Mesajları temizle"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -151,7 +151,7 @@ export default function Home() {
                 message={{
                   id: 'welcome',
                   type: 'gemini',
-                  text: "Hi! I'm Gemini. I can see and hear you. Let's chat!",
+                  text: "Merhaba! Ben Ahmet. Seni görebilir ve duyabilirim. Hadi sohbet edelim!",
                   timestamp: Date.now(),
                   reactions: []
                 }}
