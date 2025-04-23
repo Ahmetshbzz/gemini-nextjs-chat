@@ -121,7 +121,10 @@ export class GeminiWebSocket {
       setup: {
         model: MODEL,
         generation_config: {
-          response_modalities: ["AUDIO"]
+          response_modalities: ["AUDIO"],
+          speech_config: {
+            language_code: "tr-TR"
+          }
         },
         system_instruction: {
           parts: [{ text: SYSTEM_PROMPT }]
