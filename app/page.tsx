@@ -19,25 +19,25 @@ const formatTime = (timestamp: number) => {
 };
 
 const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (emoji: string) => void }) => (
-  <div className="flex gap-3 items-start group">
-    <Avatar className="h-8 w-8">
+  <div className="flex gap-2 md:gap-3 items-start group">
+    <Avatar className="h-6 w-6 md:h-8 md:w-8">
       <AvatarImage src="/avatars/human.png" alt="Human" />
       <AvatarFallback>H</AvatarFallback>
     </Avatar>
-    <div className="flex-1 space-y-2">
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-medium text-zinc-900">You</p>
-        <span className="text-xs text-zinc-500">
+    <div className="flex-1 space-y-1 md:space-y-2">
+      <div className="flex items-center gap-1 md:gap-2">
+        <p className="text-xs md:text-sm font-medium text-zinc-900">You</p>
+        <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
       </div>
-      <div className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-800">
+      <div className="rounded-lg bg-zinc-100 px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm text-zinc-800">
         {message.text}
       </div>
       {message.reactions && message.reactions.length > 0 && (
         <div className="flex gap-1 mt-1">
           {message.reactions.map((reaction, index) => (
-            <span key={index} className="text-sm bg-white rounded-full px-2 py-0.5 border">
+            <span key={index} className="text-xs md:text-sm bg-white rounded-full px-1.5 py-0.5 md:px-2 border">
               {reaction}
             </span>
           ))}
@@ -47,34 +47,34 @@ const HumanMessage = ({ message, onReaction }: { message: Message; onReaction: (
     <Button
       variant="ghost"
       size="icon"
-      className="opacity-0 group-hover:opacity-100 transition-opacity"
+      className="md:opacity-0 md:group-hover:opacity-100 transition-opacity h-6 w-6 md:h-8 md:w-8"
       onClick={() => onReaction('👍')}
     >
-      <SmilePlus className="h-4 w-4" />
+      <SmilePlus className="h-3 w-3 md:h-4 md:w-4" />
     </Button>
   </div>
 );
 
 const GeminiMessage = ({ message, onReaction }: { message: Message; onReaction: (emoji: string) => void }) => (
-  <div className="flex gap-3 items-start group">
-    <Avatar className="h-8 w-8 bg-blue-600">
+  <div className="flex gap-2 md:gap-3 items-start group">
+    <Avatar className="h-6 w-6 md:h-8 md:w-8 bg-blue-600">
       <AvatarImage src="/avatars/gemini.png" alt="Gemini" />
       <AvatarFallback>AI</AvatarFallback>
     </Avatar>
-    <div className="flex-1 space-y-2">
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-medium text-zinc-900">Gemini</p>
-        <span className="text-xs text-zinc-500">
+    <div className="flex-1 space-y-1 md:space-y-2">
+      <div className="flex items-center gap-1 md:gap-2">
+        <p className="text-xs md:text-sm font-medium text-zinc-900">Gemini</p>
+        <span className="text-[10px] md:text-xs text-zinc-500">
           {formatTime(message.timestamp)}
         </span>
       </div>
-      <div className="rounded-lg bg-white border border-zinc-200 px-3 py-2 text-sm text-zinc-800">
+      <div className="rounded-lg bg-white border border-zinc-200 px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm text-zinc-800">
         {message.text}
       </div>
       {message.reactions && message.reactions.length > 0 && (
         <div className="flex gap-1 mt-1">
           {message.reactions.map((reaction, index) => (
-            <span key={index} className="text-sm bg-white rounded-full px-2 py-0.5 border">
+            <span key={index} className="text-xs md:text-sm bg-white rounded-full px-1.5 py-0.5 md:px-2 border">
               {reaction}
             </span>
           ))}
@@ -84,10 +84,10 @@ const GeminiMessage = ({ message, onReaction }: { message: Message; onReaction: 
     <Button
       variant="ghost"
       size="icon"
-      className="opacity-0 group-hover:opacity-100 transition-opacity"
+      className="md:opacity-0 md:group-hover:opacity-100 transition-opacity h-6 w-6 md:h-8 md:w-8"
       onClick={() => onReaction('👍')}
     >
-      <SmilePlus className="h-4 w-4" />
+      <SmilePlus className="h-3 w-3 md:h-4 md:w-4" />
     </Button>
   </div>
 );
@@ -115,13 +115,15 @@ export default function Home() {
 
   return (
     <>
-      <h1 className="text-4xl font-bold text-zinc-800 p-8 pb-0">
+      <h1 className="text-3xl md:text-4xl font-bold text-zinc-800 p-4 md:p-8 md:pb-0 text-center md:text-left">
         Multimodal Live Chat
       </h1>
-      <div className="flex gap-8 p-8">
-        <CameraPreview onTranscription={handleTranscription} />
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-8">
+        <div className="w-full md:w-auto">
+          <CameraPreview onTranscription={handleTranscription} />
+        </div>
 
-        <div className="w-[640px] bg-white rounded-lg border border-zinc-200">
+        <div className="w-full md:w-[640px] bg-white rounded-lg border border-zinc-200">
           <div className="p-4 border-b border-zinc-200">
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -143,7 +145,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <ScrollArea className="h-[480px] p-6">
+          <ScrollArea className="h-[350px] md:h-[480px] p-4 md:p-6">
             <div className="space-y-6">
               <GeminiMessage
                 message={{

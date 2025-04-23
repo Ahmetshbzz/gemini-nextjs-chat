@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Camera Preview App',
-  description: 'Next.js Camera Interface',
+  title: 'Gemini NextJS Chat',
+  description: 'Next.js 15.3 ile Gemini AI Chat Uygulaması',
 };
 
 export default function RootLayout({
@@ -16,9 +16,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="tr">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </head>
       <body suppressHydrationWarning className={inter.className}>
-        <main className="min-h-screen p-8 flex flex-col items-center justify-center">
+        <main className="min-h-screen flex flex-col items-center justify-center">
           {children}
         </main>
       </body>
