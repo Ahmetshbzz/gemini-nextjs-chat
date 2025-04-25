@@ -28,7 +28,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
   const [outputAudioLevel, setOutputAudioLevel] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('user');
-  const [isMirrored, setIsMirrored] = useState(false);
+  const [isMirrored, setIsMirrored] = useState(true);
 
   const cleanupAudio = useCallback(() => {
     if (audioWorkletNodeRef.current) {
@@ -56,7 +56,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
 
   const switchCamera = async () => {
     if (!isStreaming) return;
-    
+
     // Temizle mevcut stream
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -64,20 +64,27 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
         videoRef.current.srcObject = null;
       }
     }
-    
+
     // Kamera yönünü değiştir
     const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
     setCurrentCamera(newFacingMode);
-    
+
+    // Arka kamera için ayna efektini tersine çevir
+    if (newFacingMode === 'environment') {
+      setIsMirrored(false);
+    } else {
+      setIsMirrored(true);
+    }
+
     try {
       // Yeni video stream yarat
-      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+      const videoStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: newFacingMode
         },
         audio: false
       });
-      
+
       // Aynı audio stream için yeniden izin al
       const audioStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -88,19 +95,19 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
           noiseSuppression: true,
         }
       });
-      
+
       // Video referansını güncelle
       if (videoRef.current) {
         videoRef.current.srcObject = videoStream;
         videoRef.current.muted = true;
       }
-      
+
       // Stream'i birleştir ve state'i güncelle
       const combinedStream = new MediaStream([
         ...videoStream.getTracks(),
         ...audioStream.getTracks()
       ]);
-      
+
       setStream(combinedStream);
     } catch (err) {
       console.error('Error switching camera:', err);
@@ -119,7 +126,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
       setStream(null);
     } else {
       try {
-        const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        const videoStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: currentCamera
           },
@@ -214,8 +221,8 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
 
   // Update audio processing setup
   useEffect(() => {
-    if (!isStreaming || !stream || !audioContextRef.current || 
-        !isWebSocketReady || isAudioSetup || setupInProgressRef.current) return;
+    if (!isStreaming || !stream || !audioContextRef.current ||
+      !isWebSocketReady || isAudioSetup || setupInProgressRef.current) return;
 
     let isActive = true;
     setupInProgressRef.current = true;
@@ -343,7 +350,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
           playsInline
           className={`w-full h-auto min-h-[70vh] md:min-h-[65vh] lg:min-h-[480px] object-cover bg-muted rounded-lg overflow-hidden mx-auto ${isMirrored ? 'scale-x-[-1]' : ''}`}
         />
-        
+
         {/* Connection Status Overlay */}
         {isStreaming && connectionStatus !== 'connected' && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg backdrop-blur-sm">
@@ -364,8 +371,8 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
           onClick={toggleCamera}
           size="icon"
           className={`absolute left-1/2 bottom-3 md:bottom-4 -translate-x-1/2 rounded-full w-10 h-10 md:w-12 md:h-12 backdrop-blur-sm transition-colors
-            ${isStreaming 
-              ? 'bg-red-500/50 hover:bg-red-500/70 text-white' 
+            ${isStreaming
+              ? 'bg-red-500/50 hover:bg-red-500/70 text-white'
               : 'bg-green-500/50 hover:bg-green-500/70 text-white'
             }`}
         >
@@ -383,7 +390,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
             <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         )}
-        
+
         {/* Ayna görüntüsü butonu */}
         {isStreaming && (
           <Button
@@ -407,7 +414,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
         <div className="w-full max-w-[640px] h-2 rounded-full bg-green-100 mx-auto">
           <div
             className="h-full rounded-full transition-all bg-green-500"
-            style={{ 
+            style={{
               width: `${isModelSpeaking ? outputAudioLevel : audioLevel}%`,
               transition: 'width 100ms ease-out'
             }}
