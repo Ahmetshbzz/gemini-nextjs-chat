@@ -6,39 +6,24 @@ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 const HOST = "generativelanguage.googleapis.com";
 const WS_URL = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
 
-// İngilizce öğretmeni kişilik promptu
-const SYSTEM_PROMPT = `Sen yeni başlayanlar için bir İngilizce öğretmenisin. Adın Teacher Emma. 
-Görevi: Türkçe konuşan ve İngilizce öğrenmek isteyen kişilere yardımcı olmak.
+const SYSTEM_PROMPT = `Sen Emma adında çok profesyonel bir İngilizce öğretmenisin. Amacın, kullanıcıya etkili ve pratik bir şekilde İngilizce öğretmek. Aynı zamanda konuşma pratiği yaptırır, hatalarını düzeltir ve gerektiğinde dil bilgisi veya kelime açıklamaları yaparsın.
 
 Davranış özelliklerin:
-- Her zaman sabırlı, anlayışlı ve destekleyici ol
-- Basit ve anlaşılır İngilizce kullan, gerektiğinde Türkçe açıklamalar yap
-- Öğrenciye "sen" diye hitap et ve samimi ol
-- Telaffuzda yardımcı ol, kelimeleri doğru telaffuz etmesini teşvik et
-- Hataları nazikçe düzelt, olumlu geri bildirimler ver
-- Basit günlük konuşma kalıplarını öğret
-- Sorulara kısa ve anlaşılır cevaplar ver
-- Küçük başarıları kutla ve motive et
-- Öğrenciyi adım adım ilerletmeye çalış
-
-Kullanıcı İngilizce bir şey söylediğinde:
-1. Telaffuzunu takdir et
-2. Cümlenin doğru halini göster (gerekirse)
-3. Türkçe karşılığını söyle
-4. İlgili ek kelime veya kalıplar öner
-
-Kullanıcı Türkçe bir şey söylediğinde:
-1. İngilizce karşılığını söyle
-2. Nasıl telaffuz edileceğini açıkla
-3. Benzer örnekler ver
-
-Her konuşmayı bir öğrenme fırsatı olarak değerlendir ve kullanıcıyı İngilizce konuşmaya teşvik et.
+- Samimi ama profesyonel bir öğretmen gibi konuş
+- İngilizce öğretirken net, sade ve açıklayıcı ol
+- Kullanıcının seviyesine göre konuşma pratiği yaptır
+- Gerekirse örnek cümleler ver, düzeltmeler yap
+- Sorular sorarak konuşmayı etkileşimli hale getir
+- Gerekli durumlarda Türkçe açıklamalarla destek sağla
+- Öğretici, motive edici ve sabırlı ol
+- Kullanıcıya “sen” diye hitap et
+- Türkçe ve İngilizce arasında dengeli şekilde geçiş yap: pratik sırasında İngilizce, açıklamalarda Türkçe kullan
 
 ÖNEMLİ SES TALİMATLARI:
-- İngilizce kelime, cümle veya ifadeleri söylerken İngilizce aksanıyla konuş (en-US)
-- Türkçe kelime, cümle veya ifadeleri söylerken Türkçe aksanıyla konuş (tr-TR)
-- İngilizce telaffuzları gösterirken İngilizce aksanını kullan
-- Dil değişimlerini doğal bir şekilde yap`;
+- Türkçe açıklamalarda tr-TR aksanı ile konuş
+- İngilizce pratiklerde doğal İngilizce aksanı (en-US veya en-UK) kullan
+- Ses tonun öğretici, motive edici ve pozitif olsun`;
+
 
 export class GeminiWebSocket {
   private ws: WebSocket | null = null;
@@ -47,7 +32,7 @@ export class GeminiWebSocket {
   private onMessageCallback: ((text: string) => void) | null = null;
   private onSetupCompleteCallback: (() => void) | null = null;
   private audioContext: AudioContext | null = null;
-  
+
   // Audio queue management
   private audioQueue: Float32Array[] = [];
   private isPlaying: boolean = false;
@@ -60,7 +45,7 @@ export class GeminiWebSocket {
   private accumulatedPcmData: string[] = [];
 
   constructor(
-    onMessage: (text: string) => void, 
+    onMessage: (text: string) => void,
     onSetupComplete: () => void,
     onPlayingStateChange: (isPlaying: boolean) => void,
     onAudioLevelChange: (level: number) => void,
@@ -82,7 +67,7 @@ export class GeminiWebSocket {
     if (this.ws?.readyState === WebSocket.OPEN) {
       return;
     }
-    
+
     this.ws = new WebSocket(WS_URL);
 
     this.ws.onopen = () => {
@@ -100,7 +85,7 @@ export class GeminiWebSocket {
         } else {
           messageText = event.data;
         }
-        
+
         await this.handleMessage(messageText);
       } catch (error) {
         console.error("[WebSocket] Error processing message:", error);
@@ -113,7 +98,7 @@ export class GeminiWebSocket {
 
     this.ws.onclose = (event) => {
       this.isConnected = false;
-      
+
       // Only attempt to reconnect if we haven't explicitly called disconnect
       if (!event.wasClean && this.isSetupComplete) {
         setTimeout(() => this.connect(), 1000);
@@ -128,7 +113,7 @@ export class GeminiWebSocket {
         generation_config: {
           response_modalities: ["AUDIO"],
           speech_config: {
-            language_code: "tr-TR"
+            language_code: "en-US"
           }
         },
         system_instruction: {
@@ -171,7 +156,7 @@ export class GeminiWebSocket {
 
       // Convert to Int16Array (PCM format)
       const pcmData = new Int16Array(bytes.buffer);
-      
+
       // Convert to float32 for Web Audio API
       const float32Data = new Float32Array(pcmData.length);
       for (let i = 0; i < pcmData.length; i++) {
@@ -213,7 +198,7 @@ export class GeminiWebSocket {
       this.currentSource = this.audioContext.createBufferSource();
       this.currentSource.buffer = audioBuffer;
       this.currentSource.connect(this.audioContext.destination);
-      
+
       this.currentSource.onended = () => {
         this.isPlaying = false;
         this.currentSource = null;
@@ -253,7 +238,7 @@ export class GeminiWebSocket {
   private async handleMessage(message: string) {
     try {
       const messageData = JSON.parse(message);
-      
+
       if (messageData.setupComplete) {
         this.isSetupComplete = true;
         this.onSetupCompleteCallback?.();
@@ -277,7 +262,7 @@ export class GeminiWebSocket {
           try {
             const fullPcmData = this.accumulatedPcmData.join('');
             const wavData = await pcmToWav(fullPcmData, 24000);
-            
+
             const transcription = await this.transcriptionService.transcribeAudio(
               wavData,
               "audio/wav"
@@ -305,4 +290,4 @@ export class GeminiWebSocket {
     this.isConnected = false;
     this.accumulatedPcmData = [];
   }
-} 
+}

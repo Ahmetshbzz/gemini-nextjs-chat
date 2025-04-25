@@ -116,14 +116,14 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-zinc-800 p-3 pb-1 md:p-6 md:pb-3 text-center">
-         Teacher Emma ile İngilizce
+        Teacher Emma ile İngilizce
       </h1>
       <div className="flex flex-col md:flex-row w-full flex-1 md:gap-4 lg:gap-6">
         <div className="w-full px-1 md:px-2 md:w-7/12 lg:w-3/5 md:pl-6 flex-grow">
           <CameraPreview onTranscription={handleTranscription} />
         </div>
 
-        <div className="w-full px-1 md:px-2 md:w-5/12 lg:w-2/5 md:pr-6 bg-white rounded-lg border border-zinc-200 flex flex-col mt-3 md:mt-0 mb-3 md:mb-6">
+        <div className="w-full px-1 md:px-2 md:w-5/12 lg:w-2/5 md:pr-6 bg-white rounded-lg border border-zinc-200 flex flex-col mt-3 md:mt-0 mb-3 md:mb-6 h-[calc(100vh-120px)]">
           <div className="p-2 md:p-4 border-b border-zinc-200">
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -145,7 +145,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <ScrollArea className="h-[250px] sm:h-[300px] md:h-[400px] lg:h-[480px] p-2 md:p-4 flex-1">
+          <ScrollArea className="flex-1 p-2 md:p-4">
             <div className="space-y-4">
               <GeminiMessage
                 message={{

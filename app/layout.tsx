@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kanki Gemini Sohbet',
-  description: 'Arkadaşın Gemini ile takıl, muhabbet et! Next.js 15.3 ile geliştirildi',
+  title: 'Emma Teacher - Your English Learning Companion',
+  description: 'Chat and learn English with Emma, your personal language tutor! Built with Next.js 15.3',
 };
 
 export default function RootLayout({
