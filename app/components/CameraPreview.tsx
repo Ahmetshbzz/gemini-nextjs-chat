@@ -55,60 +55,6 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     geminiWsRef.current.sendMediaChunk(b64Data, "audio/pcm");
   };
 
-  const switchCamera = async () => {
-    if (!isStreaming || !stream) return;
-
-    // Geçiş durumunu başlat
-    setIsSwitchingCamera(true);
-
-    try {
-      // Sadece video izlerini durdur
-      const videoTracks = stream.getVideoTracks();
-      const audioTracks = stream.getAudioTracks();
-
-      // Video izlerini durdur
-      videoTracks.forEach(track => track.stop());
-
-      // Kamera yönünü değiştir
-      const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
-      setCurrentCamera(newFacingMode);
-
-      // Arka kamera için ayna efektini tersine çevir
-      if (newFacingMode === 'environment') {
-        setIsMirrored(false);
-      } else {
-        setIsMirrored(true);
-      }
-
-      // Sadece yeni video stream yarat
-      const videoStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: newFacingMode
-        },
-        audio: false
-      });
-
-      // Video referansını güncelle
-      if (videoRef.current) {
-        videoRef.current.srcObject = videoStream;
-        videoRef.current.muted = true;
-      }
-
-      // Yeni video izlerini ve mevcut audio izlerini birleştir
-      const combinedStream = new MediaStream([
-        ...videoStream.getTracks(),
-        ...audioTracks
-      ]);
-
-      setStream(combinedStream);
-    } catch (err) {
-      console.error('Error switching camera:', err);
-    } finally {
-      // Geçiş durumunu kapat
-      setIsSwitchingCamera(false);
-    }
-  };
-
   const toggleCamera = async () => {
     if (isStreaming && stream) {
       setIsStreaming(false);
@@ -119,6 +65,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
         videoRef.current.srcObject = null;
       }
       setStream(null);
+      setIsWebSocketReady(false);
     } else {
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({
@@ -161,6 +108,102 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
     }
   };
 
+  const switchCamera = async () => {
+    if (!isStreaming || !stream) return;
+
+    // Geçiş durumunu başlat
+    setIsSwitchingCamera(true);
+
+    try {
+      // Mevcut video track'leri bul
+      const videoTracks = stream.getVideoTracks();
+
+      // Kamera yönünü değiştir
+      const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
+      setCurrentCamera(newFacingMode);
+
+      // Arka kamera için ayna efektini tersine çevir
+      if (newFacingMode === 'environment') {
+        setIsMirrored(false);
+      } else {
+        setIsMirrored(true);
+      }
+
+      // Yeni kamera için track al
+      const newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: newFacingMode
+        },
+        audio: false
+      });
+
+      const newVideoTrack = newVideoStream.getVideoTracks()[0];
+
+      // Eski video track'leri kapat ve kaldır
+      videoTracks.forEach(track => {
+        // Mevcut track'i durdur
+        track.stop();
+
+        // Mevcut track'i stream'den kaldır
+        stream.removeTrack(track);
+      });
+
+      // Yeni video track'i stream'e ekle
+      stream.addTrack(newVideoTrack);
+
+      // Stream referansını güncellemeden sadece videoRef için içeriği güncelle
+      // Bu sayede stream referansı korunur ve WebSocket bağlantısı kesilmez
+      if (videoRef.current) {
+        // srcObject değiştirmek yerine sadece içeriği güncelletebiliriz
+        // çünkü stream referansı değişmedi
+
+        // Eğer srcObject değiştirilmesi gerekiyorsa, şu şekilde yapılabilir
+        // ancak yine de aynı stream referansını kullanmak önemli
+        videoRef.current.srcObject = null;
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+      }
+
+      // NOT: Yeni bir MediaStream nesnesi oluşturmuyoruz,
+      // bu sayede stream referansı korunuyor ve bağlantı kopmuyor
+
+    } catch (err) {
+      console.error('Error switching camera:', err);
+      // Hata durumunda WebSocket bağlantısını kontrol et ve gerekirse yenile
+      if (!geminiWsRef.current || !isWebSocketReady) {
+        initializeWebSocket();
+      }
+    } finally {
+      // Geçiş durumunu kapat
+      setIsSwitchingCamera(false);
+    }
+  };
+
+  // WebSocket bağlantısını başlatmak için yardımcı fonksiyon
+  const initializeWebSocket = useCallback(() => {
+    if (!geminiWsRef.current) {
+      setConnectionStatus('connecting');
+      geminiWsRef.current = new GeminiWebSocket(
+        (text) => {
+          console.log("Received from Gemini:", text);
+        },
+        () => {
+          console.log("[Camera] WebSocket setup complete, starting media capture");
+          setIsWebSocketReady(true);
+          setConnectionStatus('connected');
+        },
+        (isPlaying) => {
+          setIsModelSpeaking(isPlaying);
+        },
+        (level) => {
+          setOutputAudioLevel(level);
+        },
+        onTranscription
+      );
+      geminiWsRef.current.connect();
+    }
+  }, [onTranscription]);
+
   // Initialize WebSocket connection
   useEffect(() => {
     if (!isStreaming) {
@@ -168,36 +211,20 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
       return;
     }
 
-    setConnectionStatus('connecting');
-    geminiWsRef.current = new GeminiWebSocket(
-      (text) => {
-        console.log("Received from Gemini:", text);
-      },
-      () => {
-        console.log("[Camera] WebSocket setup complete, starting media capture");
-        setIsWebSocketReady(true);
-        setConnectionStatus('connected');
-      },
-      (isPlaying) => {
-        setIsModelSpeaking(isPlaying);
-      },
-      (level) => {
-        setOutputAudioLevel(level);
-      },
-      onTranscription
-    );
-    geminiWsRef.current.connect();
+    initializeWebSocket();
 
     return () => {
-      if (imageIntervalRef.current) {
-        clearInterval(imageIntervalRef.current);
-        imageIntervalRef.current = null;
+      if (!isStreaming) {
+        if (imageIntervalRef.current) {
+          clearInterval(imageIntervalRef.current);
+          imageIntervalRef.current = null;
+        }
+        cleanupWebSocket();
+        setIsWebSocketReady(false);
+        setConnectionStatus('disconnected');
       }
-      cleanupWebSocket();
-      setIsWebSocketReady(false);
-      setConnectionStatus('disconnected');
     };
-  }, [isStreaming, onTranscription, cleanupWebSocket]);
+  }, [isStreaming, cleanupWebSocket, initializeWebSocket]);
 
   // Start image capture only after WebSocket is ready
   useEffect(() => {
