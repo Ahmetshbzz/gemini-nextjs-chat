@@ -29,6 +29,7 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('user');
   const [isMirrored, setIsMirrored] = useState(true);
+  const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
 
   const cleanupAudio = useCallback(() => {
     if (audioWorkletNodeRef.current) {
@@ -55,45 +56,36 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
   };
 
   const switchCamera = async () => {
-    if (!isStreaming) return;
+    if (!isStreaming || !stream) return;
 
-    // Temizle mevcut stream
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    }
-
-    // Kamera yönünü değiştir
-    const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
-    setCurrentCamera(newFacingMode);
-
-    // Arka kamera için ayna efektini tersine çevir
-    if (newFacingMode === 'environment') {
-      setIsMirrored(false);
-    } else {
-      setIsMirrored(true);
-    }
+    // Geçiş durumunu başlat
+    setIsSwitchingCamera(true);
 
     try {
-      // Yeni video stream yarat
+      // Sadece video izlerini durdur
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+
+      // Video izlerini durdur
+      videoTracks.forEach(track => track.stop());
+
+      // Kamera yönünü değiştir
+      const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
+      setCurrentCamera(newFacingMode);
+
+      // Arka kamera için ayna efektini tersine çevir
+      if (newFacingMode === 'environment') {
+        setIsMirrored(false);
+      } else {
+        setIsMirrored(true);
+      }
+
+      // Sadece yeni video stream yarat
       const videoStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: newFacingMode
         },
         audio: false
-      });
-
-      // Aynı audio stream için yeniden izin al
-      const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          autoGainControl: true,
-          noiseSuppression: true,
-        }
       });
 
       // Video referansını güncelle
@@ -102,15 +94,18 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
         videoRef.current.muted = true;
       }
 
-      // Stream'i birleştir ve state'i güncelle
+      // Yeni video izlerini ve mevcut audio izlerini birleştir
       const combinedStream = new MediaStream([
         ...videoStream.getTracks(),
-        ...audioStream.getTracks()
+        ...audioTracks
       ]);
 
       setStream(combinedStream);
     } catch (err) {
       console.error('Error switching camera:', err);
+    } finally {
+      // Geçiş durumunu kapat
+      setIsSwitchingCamera(false);
     }
   };
 
@@ -366,6 +361,13 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
           </div>
         )}
 
+        {/* Kamera Değiştirme Overlay */}
+        {isSwitchingCamera && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-lg backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white" />
+          </div>
+        )}
+
         {/* Ana kamera aç/kapat butonu */}
         <Button
           onClick={toggleCamera}
@@ -383,11 +385,12 @@ export default function CameraPreview({ onTranscription }: CameraPreviewProps) {
         {isStreaming && (
           <Button
             onClick={switchCamera}
+            disabled={isSwitchingCamera}
             size="icon"
             className="absolute right-3 md:right-4 bottom-3 md:bottom-4 rounded-full w-8 h-8 md:w-10 md:h-10 backdrop-blur-sm transition-colors
               bg-blue-500/50 hover:bg-blue-500/70 text-white"
           >
-            <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
+            <RotateCcw className={`h-4 w-4 md:h-5 md:w-5 ${isSwitchingCamera ? 'animate-spin' : ''}`} />
           </Button>
         )}
 
